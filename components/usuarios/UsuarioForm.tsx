@@ -110,7 +110,7 @@ export const UsuarioForm: React.FC<UsuarioFormProps> = ({
         console.log('Resultado actualización:', result);
 
         if (result.error) {
-          throw new Error(result.error.message || 'Error al actualizar usuario');
+          console.log('Error al actualizar usuario:');
         }
       } else {
         console.log('Creando nuevo usuario');
@@ -118,7 +118,7 @@ export const UsuarioForm: React.FC<UsuarioFormProps> = ({
         console.log('Resultado creación:', result);
 
         if (result.error) {
-          throw new Error(result.error.message || 'Error al crear usuario');
+          console.log('Error al crear usuario:');
         }
       }
 

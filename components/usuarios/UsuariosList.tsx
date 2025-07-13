@@ -123,7 +123,7 @@ export const UsuariosList: React.FC = () => {
 
       if (result.error) {
         console.error('Error en la consulta:', result.error);
-        alert('Error al cargar usuarios: ' + (result.error.message || result.error));
+        alert('Error al cargar usuarios: ' + (result.error));
         setUsuarios([]);
       } else {
         console.log('Usuarios cargados exitosamente:', result.data);
