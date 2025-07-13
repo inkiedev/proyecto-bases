@@ -92,7 +92,7 @@ export const ParcelaForm: React.FC<ParcelaFormProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof ParcelaFormType, value: any) => {
+  const handleInputChange = (field: keyof ParcelaFormType, value: string | number | boolean) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));

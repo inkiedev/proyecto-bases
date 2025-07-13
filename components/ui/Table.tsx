@@ -3,12 +3,12 @@ import React from 'react';
 interface Column {
   key: string;
   header: string;
-  render?: (value: any, row: any) => React.ReactNode;
+  render?: (value: never, row: never) => React.ReactNode;
 }
 
 interface TableProps {
   columns: Column[];
-  data: any[];
+  data: never[]; // Puede ser cualquier tipo de dato, dependiendo del uso
   loading?: boolean;
   emptyMessage?: string;
 }

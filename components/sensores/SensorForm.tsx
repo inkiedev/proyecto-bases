@@ -82,7 +82,7 @@ export const SensorForm: React.FC<SensorFormProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof SensorFormType, value: any) => {
+  const handleInputChange = (field: keyof SensorFormType, value: string | number) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));

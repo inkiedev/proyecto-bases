@@ -107,7 +107,7 @@ export const AlertaForm: React.FC<AlertaFormProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof AlertaFormType, value: any) => {
+  const handleInputChange = (field: keyof AlertaFormType, value: string | number | undefined) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));

@@ -1,4 +1,3 @@
-// types/database.ts
 export interface Usuario {
   id_usuario: number;
   nombre: string;
@@ -42,6 +41,8 @@ export interface Medicion {
 }
 
 export interface Alerta {
+  parcela_nombre: string;
+  sensor_nombre: string;
   id_alerta: number;
   tipo_alerta: string;
   mensaje: string;
@@ -54,15 +55,14 @@ export interface Alerta {
   parcela?: Parcela;
   sensor?: Sensor;
 }
-
 export interface DatabaseResponse<T> {
-  data: T[] | null;
-  error: any;
+  data: T[] | null
+  error: Error | null | unknown;
 }
 
 export interface SingleDatabaseResponse<T> {
   data: T | null;
-  error: any;
+  error: Error | null | unknown;
 }
 
 export interface UsuarioForm {

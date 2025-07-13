@@ -10,6 +10,7 @@ interface InputProps {
   disabled?: boolean;
   error?: string;
   name?: string;
+  step?: string | number;
 }
 
 export const Input: React.FC<InputProps> = ({
@@ -22,6 +23,7 @@ export const Input: React.FC<InputProps> = ({
                                               disabled = false,
                                               error,
                                               name,
+                                              step
                                             }) => {
   return (
     <div className="w-full">
@@ -38,6 +40,7 @@ export const Input: React.FC<InputProps> = ({
         value={value}
         onChange={onChange}
         required={required}
+        step={step}
         disabled={disabled}
         className={`w-full px-3 py-2 border rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 ${
           error ? 'border-red-500' : 'border-gray-300'

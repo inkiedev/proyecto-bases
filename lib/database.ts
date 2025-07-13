@@ -14,30 +14,14 @@ import {
   AlertaForm,
   FilterOptions
 } from '@/types/database';
+import {PostgrestError} from "@supabase/supabase-js";
 
-// Función helper para ejecutar SQL crudo usando .from() con filtros complejos
-const executeRawSQL = async (tableName: string, selectClause: string, whereClause: string = '', orderClause: string = '') => {
-  try {
-    // Para consultas complejas, usaremos una vista temporal o consulta directa
-    // Esto es un workaround para obtener SQL crudo sin funciones personalizadas
-
-    const { data, error } = await supabase
-      .from(tableName)
-      .select(selectClause);
-
-    return { data, error };
-  } catch (err) {
-    return { data: null, error: err };
-  }
-};
-
-// CRUD para Usuarios - CON SQL CRUDO REAL
+// CRUD para Usuarios - CORREGIDO
 export const usuariosDB = {
   async getAll(filters?: FilterOptions): Promise<DatabaseResponse<Usuario>> {
     try {
       console.log('Ejecutando consulta SQL cruda para usuarios...');
 
-      // Construir consulta SQL cruda como string (para practicar SQL)
       let sqlQuery = `
         SELECT u.id_usuario, u.nombre, u.email, u.rol, u.fecha_creacion, u.activo,
                COUNT(p.id_parcela) as total_parcelas
@@ -45,7 +29,7 @@ export const usuariosDB = {
         LEFT JOIN parcelas p ON u.id_usuario = p.id_usuario_responsable
       `;
 
-      let conditions = [];
+      const conditions = [];
 
       if (filters?.search) {
         conditions.push(`(u.nombre ILIKE '%${filters.search}%' OR u.email ILIKE '%${filters.search}%')`);
@@ -68,8 +52,7 @@ export const usuariosDB = {
 
       console.log('SQL Query:', sqlQuery);
 
-      // USAR SUPABASE CON CONSULTA DIRECTA (sin funciones personalizadas)
-      // Simulamos el comportamiento con el cliente estándar
+      // Usar cliente Supabase estándar
       let query = supabase
         .from('usuarios')
         .select(`
@@ -82,7 +65,6 @@ export const usuariosDB = {
           activo
         `);
 
-      // Aplicar filtros uno por uno (esto es lo más cercano a SQL crudo que podemos hacer)
       if (filters?.search) {
         query = query.or(`nombre.ilike.%${filters.search}%,email.ilike.%${filters.search}%`);
       }
@@ -101,20 +83,20 @@ export const usuariosDB = {
 
       if (error) {
         console.error('Error en usuariosDB.getAll:', error);
-        return { data: null, error };
+        return { data: [], error };
       }
 
-      // Para obtener el conteo de parcelas, hacer una consulta adicional
+      // Obtener conteo de parcelas para cada usuario
       const usuariosConParcelas = await Promise.all(
         (data || []).map(async (usuario) => {
-          const { data: parcelas } = await supabase
+          const { count } = await supabase
             .from('parcelas')
-            .select('id_parcela', { count: 'exact' })
+            .select('*', { count: 'exact', head: true })
             .eq('id_usuario_responsable', usuario.id_usuario);
 
           return {
             ...usuario,
-            total_parcelas: parcelas?.length || 0
+            total_parcelas: count || 0
           };
         })
       );
@@ -124,7 +106,7 @@ export const usuariosDB = {
 
     } catch (err) {
       console.error('Exception en usuariosDB.getAll:', err);
-      return { data: null, error: err };
+      return { data: [], error: err };
     }
   },
 
@@ -144,14 +126,14 @@ export const usuariosDB = {
       }
 
       // Obtener conteo de parcelas
-      const { data: parcelas } = await supabase
+      const { count } = await supabase
         .from('parcelas')
-        .select('id_parcela', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .eq('id_usuario_responsable', id);
 
       const usuarioConDatos = {
         ...data,
-        total_parcelas: parcelas?.length || 0
+        total_parcelas: count || 0
       };
 
       return { data: usuarioConDatos, error: null };
@@ -198,6 +180,7 @@ export const usuariosDB = {
   async update(id: number, usuario: Partial<UsuarioForm>): Promise<SingleDatabaseResponse<Usuario>> {
     try {
       const updates = Object.entries(usuario)
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .filter(([_, value]) => value !== undefined)
         .map(([key, value]) => `${key} = '${value}'`)
         .join(', ');
@@ -230,7 +213,7 @@ export const usuariosDB = {
     }
   },
 
-  async delete(id: number): Promise<{ error: any }> {
+  async delete(id: number): Promise<{ error: PostgrestError | null }> {
     try {
       const sqlQuery = `DELETE FROM usuarios WHERE id_usuario = ${id}`;
       console.log('SQL Query:', sqlQuery);
@@ -246,27 +229,30 @@ export const usuariosDB = {
 
       return { error };
     } catch (err) {
-      console.error('Exception en usuariosDB.delete:', err);
-      return { error: err };
+      if (err instanceof PostgrestError) {
+        console.error('PostgrestError en usuariosDB.delete:', err.message);
+        return { error: err };
+      }
+      return { error: { message: 'Error desconocido al eliminar usuario' } as PostgrestError };
     }
   }
 };
 
-// CRUD para Parcelas
+// CRUD para Parcelas - CORREGIDO
 export const parcelasDB = {
   async getAll(filters?: FilterOptions): Promise<DatabaseResponse<Parcela>> {
     try {
       console.log('Ejecutando consulta SQL cruda para parcelas...');
 
       let sqlQuery = `
-        SELECT p.*, u.nombre as usuario_nombre,
-               COUNT(s.id_sensor) as total_sensores
-        FROM parcelas p
-        LEFT JOIN usuarios u ON p.id_usuario_responsable = u.id_usuario
-        LEFT JOIN sensores s ON p.id_parcela = s.id_parcela
+          SELECT p.*, u.nombre as usuario_nombre,
+                 COUNT(s.id_sensor) as total_sensores
+          FROM parcelas p
+                   LEFT JOIN usuarios u ON p.id_usuario_responsable = u.id_usuario
+                   LEFT JOIN sensores s ON p.id_parcela = s.id_parcela
       `;
 
-      let conditions = [];
+      const conditions = [];
 
       if (filters?.search) {
         conditions.push(`(p.nombre ILIKE '%${filters.search}%' OR p.ubicacion ILIKE '%${filters.search}%' OR p.tipo_cultivo ILIKE '%${filters.search}%')`);
@@ -306,21 +292,21 @@ export const parcelasDB = {
 
       if (error) {
         console.error('Error en parcelasDB.getAll:', error);
-        return { data: null, error };
+        return { data: [], error };
       }
 
       // Obtener conteo de sensores para cada parcela
       const parcelasConSensores = await Promise.all(
         (data || []).map(async (parcela) => {
-          const { data: sensores } = await supabase
+          const { count } = await supabase
             .from('sensores')
-            .select('id_sensor', { count: 'exact' })
+            .select('*', { count: 'exact', head: true })
             .eq('id_parcela', parcela.id_parcela);
 
           return {
             ...parcela,
             usuario_nombre: parcela.usuarios?.nombre || 'Sin asignar',
-            total_sensores: sensores?.length || 0
+            total_sensores: count || 0
           };
         })
       );
@@ -329,7 +315,7 @@ export const parcelasDB = {
 
     } catch (err) {
       console.error('Exception en parcelasDB.getAll:', err);
-      return { data: null, error: err };
+      return { data: [], error: err };
     }
   },
 
@@ -351,15 +337,15 @@ export const parcelasDB = {
       }
 
       // Obtener conteo de sensores
-      const { data: sensores } = await supabase
+      const { count } = await supabase
         .from('sensores')
-        .select('id_sensor', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .eq('id_parcela', id);
 
       const parcelaConDatos = {
         ...data,
         usuario_nombre: data.usuarios?.nombre || 'Sin asignar',
-        total_sensores: sensores?.length || 0
+        total_sensores: count || 0
       };
 
       return { data: parcelaConDatos, error: null };
@@ -371,9 +357,9 @@ export const parcelasDB = {
   async create(parcela: ParcelaForm): Promise<SingleDatabaseResponse<Parcela>> {
     try {
       const sqlQuery = `
-        INSERT INTO parcelas (nombre, ubicacion, area_m2, tipo_cultivo, activa, id_usuario_responsable)
-        VALUES ('${parcela.nombre}', '${parcela.ubicacion}', ${parcela.area_m2}, '${parcela.tipo_cultivo}', ${parcela.activa}, ${parcela.id_usuario_responsable})
-        RETURNING *
+          INSERT INTO parcelas (nombre, ubicacion, area_m2, tipo_cultivo, activa, id_usuario_responsable)
+          VALUES ('${parcela.nombre}', '${parcela.ubicacion}', ${parcela.area_m2}, '${parcela.tipo_cultivo}', ${parcela.activa}, ${parcela.id_usuario_responsable})
+              RETURNING *
       `;
 
       console.log('SQL Query:', sqlQuery);
@@ -393,6 +379,8 @@ export const parcelasDB = {
   async update(id: number, parcela: Partial<ParcelaForm>): Promise<SingleDatabaseResponse<Parcela>> {
     try {
       const updates = Object.entries(parcela)
+
+        // eslint-disable-next-line @typescript-eslint/no-unused-vars
         .filter(([_, value]) => value !== undefined)
         .map(([key, value]) => `${key} = '${value}'`)
         .join(', ');
@@ -412,7 +400,7 @@ export const parcelasDB = {
     }
   },
 
-  async delete(id: number): Promise<{ error: any }> {
+  async delete(id: number): Promise<{ error: PostgrestError | null }> {
     try {
       console.log(`SQL: DELETE FROM parcelas WHERE id_parcela = ${id}`);
 
@@ -423,50 +411,20 @@ export const parcelasDB = {
 
       return { error };
     } catch (err) {
-      return { error: err };
+      if (err instanceof PostgrestError) {
+        console.error('PostgrestError en usuariosDB.delete:', err.message);
+        return { error: err };
+      }
+      return { error: { message: 'Error desconocido al eliminar usuario' } as PostgrestError };
     }
   }
 };
 
-// CRUD para Sensores
+// CRUD para Sensores - CORREGIDO
 export const sensoresDB = {
   async getAll(filters?: FilterOptions): Promise<DatabaseResponse<Sensor>> {
     try {
       console.log('Ejecutando consulta SQL cruda para sensores...');
-
-      let sqlQuery = `
-        SELECT s.*, p.nombre as parcela_nombre,
-               COUNT(m.id_medicion) as total_mediciones
-        FROM sensores s
-        LEFT JOIN parcelas p ON s.id_parcela = p.id_parcela
-        LEFT JOIN mediciones m ON s.id_sensor = m.id_sensor
-      `;
-
-      let conditions = [];
-
-      if (filters?.search) {
-        conditions.push(`(s.nombre ILIKE '%${filters.search}%' OR s.ubicacion ILIKE '%${filters.search}%')`);
-      }
-
-      if (filters?.status) {
-        conditions.push(`s.estado = '${filters.status}'`);
-      }
-
-      if (filters?.type) {
-        conditions.push(`s.tipo_sensor = '${filters.type}'`);
-      }
-
-      if (filters?.parcela) {
-        conditions.push(`s.id_parcela = ${filters.parcela}`);
-      }
-
-      if (conditions.length > 0) {
-        sqlQuery += ` WHERE ` + conditions.join(' AND ');
-      }
-
-      sqlQuery += ` GROUP BY s.id_sensor, p.nombre ORDER BY s.fecha_instalacion DESC`;
-
-      console.log('SQL Query:', sqlQuery);
 
       let query = supabase
         .from('sensores')
@@ -497,21 +455,21 @@ export const sensoresDB = {
 
       if (error) {
         console.error('Error en sensoresDB.getAll:', error);
-        return { data: null, error };
+        return { data: [], error };
       }
 
       // Obtener conteo de mediciones
       const sensoresConMediciones = await Promise.all(
         (data || []).map(async (sensor) => {
-          const { data: mediciones } = await supabase
+          const { count } = await supabase
             .from('mediciones')
-            .select('id_medicion', { count: 'exact' })
+            .select('*', { count: 'exact', head: true })
             .eq('id_sensor', sensor.id_sensor);
 
           return {
             ...sensor,
             parcela_nombre: sensor.parcelas?.nombre || 'Sin asignar',
-            total_mediciones: mediciones?.length || 0
+            total_mediciones: count || 0
           };
         })
       );
@@ -520,7 +478,7 @@ export const sensoresDB = {
 
     } catch (err) {
       console.error('Exception en sensoresDB.getAll:', err);
-      return { data: null, error: err };
+      return { data: [], error: err };
     }
   },
 
@@ -539,15 +497,15 @@ export const sensoresDB = {
         return { data: null, error };
       }
 
-      const { data: mediciones } = await supabase
+      const { count } = await supabase
         .from('mediciones')
-        .select('id_medicion', { count: 'exact' })
+        .select('*', { count: 'exact', head: true })
         .eq('id_sensor', id);
 
       const sensorConDatos = {
         ...data,
         parcela_nombre: data.parcelas?.nombre || 'Sin asignar',
-        total_mediciones: mediciones?.length || 0
+        total_mediciones: count || 0
       };
 
       return { data: sensorConDatos, error: null };
@@ -587,7 +545,7 @@ export const sensoresDB = {
     }
   },
 
-  async delete(id: number): Promise<{ error: any }> {
+  async delete(id: number): Promise<{ error: PostgrestError | null }> {
     try {
       console.log(`SQL: DELETE FROM sensores WHERE id_sensor = ${id}`);
 
@@ -598,12 +556,16 @@ export const sensoresDB = {
 
       return { error };
     } catch (err) {
-      return { error: err };
+      if (err instanceof PostgrestError) {
+        console.error('PostgrestError en usuariosDB.delete:', err.message);
+        return { error: err };
+      }
+      return { error: { message: 'Error desconocido al eliminar usuario' } as PostgrestError };
     }
   }
 };
 
-// CRUD para Mediciones
+// CRUD para Mediciones - CORREGIDO
 export const medicionesDB = {
   async getAll(filters?: FilterOptions): Promise<DatabaseResponse<Medicion>> {
     try {
@@ -638,7 +600,7 @@ export const medicionesDB = {
 
       if (error) {
         console.error('Error en medicionesDB.getAll:', error);
-        return { data: null, error };
+        return { data: [], error };
       }
 
       const medicionesConDatos = (data || []).map(medicion => ({
@@ -652,7 +614,7 @@ export const medicionesDB = {
 
     } catch (err) {
       console.error('Exception en medicionesDB.getAll:', err);
-      return { data: null, error: err };
+      return { data: [], error: err };
     }
   },
 
@@ -719,7 +681,7 @@ export const medicionesDB = {
     }
   },
 
-  async delete(id: number): Promise<{ error: any }> {
+  async delete(id: number): Promise<{ error: PostgrestError | null }> {
     try {
       console.log(`SQL: DELETE FROM mediciones WHERE id_medicion = ${id}`);
 
@@ -730,12 +692,16 @@ export const medicionesDB = {
 
       return { error };
     } catch (err) {
-      return { error: err };
+      if (err instanceof PostgrestError) {
+        console.error('PostgrestError en usuariosDB.delete:', err.message);
+        return { error: err };
+      }
+      return { error: { message: 'Error desconocido al eliminar usuario' } as PostgrestError };
     }
   }
 };
 
-// CRUD para Alertas
+// CRUD para Alertas - CORREGIDO
 export const alertasDB = {
   async getAll(filters?: FilterOptions): Promise<DatabaseResponse<Alerta>> {
     try {
@@ -779,7 +745,7 @@ export const alertasDB = {
 
       if (error) {
         console.error('Error en alertasDB.getAll:', error);
-        return { data: null, error };
+        return { data: [], error };
       }
 
       const alertasConDatos = (data || []).map(alerta => ({
@@ -793,7 +759,7 @@ export const alertasDB = {
 
     } catch (err) {
       console.error('Exception en alertasDB.getAll:', err);
-      return { data: null, error: err };
+      return { data: [], error: err };
     }
   },
 
@@ -857,7 +823,7 @@ export const alertasDB = {
     }
   },
 
-  async delete(id: number): Promise<{ error: any }> {
+  async delete(id: number): Promise<{ error: PostgrestError  | null }> {
     try {
       console.log(`SQL: DELETE FROM alertas WHERE id_alerta = ${id}`);
 
@@ -868,7 +834,11 @@ export const alertasDB = {
 
       return { error };
     } catch (err) {
-      return { error: err };
+      if (err instanceof PostgrestError) {
+        console.error('PostgrestError en usuariosDB.delete:', err.message);
+        return { error: err };
+      }
+      return { error: { message: 'Error desconocido al eliminar usuario' } as PostgrestError };
     }
   }
 };

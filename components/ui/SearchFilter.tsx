@@ -13,8 +13,8 @@ interface FilterField {
 
 interface SearchFilterProps {
   fields: FilterField[];
-  filters: Record<string, any>;
-  onFilterChange: (filters: Record<string, any>) => void;
+  filters: Record<string, string>;
+  onFilterChange: (filters: { [p: string]: string }) => void;
   onReset: () => void;
 }
 

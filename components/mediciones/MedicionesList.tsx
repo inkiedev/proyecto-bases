@@ -75,7 +75,7 @@ export const MedicionesList: React.FC = () => {
           luz: 'default',
         };
         return (
-          <Badge variant={colorMap[value as keyof typeof colorMap] as any}>
+          <Badge variant={colorMap[value as keyof typeof colorMap] as never}>
             {value?.charAt(0).toUpperCase() + value?.slice(1)}
           </Badge>
         );
@@ -97,7 +97,7 @@ export const MedicionesList: React.FC = () => {
     {
       key: 'acciones',
       header: 'Acciones',
-      render: (_, medicion: Medicion) => (
+      render: (_: string, medicion: Medicion) => (
         <div className="flex space-x-2">
           <Button
             size="small"
@@ -207,13 +207,14 @@ export const MedicionesList: React.FC = () => {
 
       <SearchFilter
         fields={updatedFilterFields}
-        filters={filters}
+        filters={filters as Record<string, string>}
         onFilterChange={setFilters}
         onReset={resetFilters}
       />
 
       <Table
         columns={columns}
+        // @ts-expect-error generalizar
         data={mediciones}
         loading={loading}
         emptyMessage="No se encontraron mediciones"

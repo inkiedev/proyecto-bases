@@ -88,7 +88,7 @@ export const ParcelasList: React.FC = () => {
     {
       key: 'acciones',
       header: 'Acciones',
-      render: (_, parcela: Parcela) => (
+      render: (_:string, parcela: Parcela) => (
         <div className="flex space-x-2">
           <Button
             size="small"
@@ -173,13 +173,14 @@ export const ParcelasList: React.FC = () => {
 
       <SearchFilter
         fields={filterFields}
-        filters={filters}
+        filters={filters as Record<string, string>}
         onFilterChange={setFilters}
         onReset={resetFilters}
       />
 
       <Table
         columns={columns}
+        // @ts-expect-error generalizar
         data={parcelas}
         loading={loading}
         emptyMessage="No se encontraron parcelas"

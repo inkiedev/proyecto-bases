@@ -60,7 +60,7 @@ export const RecentAlerts: React.FC = () => {
         <p className="text-gray-500 text-center py-8">No hay alertas pendientes</p>
       ) : (
         <div className="space-y-4">
-          {alertas.map((alerta) => (
+          {alertas.map((alerta: Alerta) => (
             <div key={alerta.id_alerta} className="border-l-4 border-red-400 pl-4 py-2">
               <div className="flex justify-between items-start">
                 <div className="flex-1">

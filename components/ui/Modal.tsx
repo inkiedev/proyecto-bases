@@ -1,3 +1,4 @@
+// components/ui/Modal.tsx - CORREGIDO
 import React from 'react';
 
 interface ModalProps {
@@ -26,12 +27,25 @@ export const Modal: React.FC<ModalProps> = ({
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
       <div className="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <div className="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onClick={onClose}></div>
+        {/* Overlay con z-index menor */}
+        <div
+          className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+          onClick={onClose}
+          style={{ zIndex: -1 }}
+        ></div>
 
-        <span className="hidden sm:inline-block sm:align-middle sm:h-screen">&#8203;</span>
+        {/* Spacer element */}
+        <span className="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">
+          &#8203;
+        </span>
 
-        <div className={`inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-full ${sizeClasses[size]}`}>
+        {/* Modal panel con z-index mayor */}
+        <div
+          className={`inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-full ${sizeClasses[size]} relative`}
+          style={{ zIndex: 10 }}
+        >
           <div className="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            {/* Header */}
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-medium text-gray-900">{title}</h3>
               <button
@@ -44,7 +58,11 @@ export const Modal: React.FC<ModalProps> = ({
                 </svg>
               </button>
             </div>
-            {children}
+
+            {/* Content */}
+            <div className="relative">
+              {children}
+            </div>
           </div>
         </div>
       </div>

@@ -88,7 +88,7 @@ export const MedicionForm: React.FC<MedicionFormProps> = ({
     }
   };
 
-  const handleInputChange = (field: keyof MedicionFormType, value: any) => {
+  const handleInputChange = (field: keyof MedicionFormType, value: number | string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     if (errors[field]) {
       setErrors(prev => ({ ...prev, [field]: '' }));

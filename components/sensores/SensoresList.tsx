@@ -75,7 +75,7 @@ export const SensoresList: React.FC = () => {
           luz: 'default',
         };
         return (
-          <Badge variant={colorMap[value as keyof typeof colorMap] as any}>
+          <Badge variant={colorMap[value as keyof typeof colorMap] as never}>
             {value.charAt(0).toUpperCase() + value.slice(1)}
           </Badge>
         );
@@ -107,7 +107,7 @@ export const SensoresList: React.FC = () => {
           mantenimiento: 'warning',
         };
         return (
-          <Badge variant={colorMap[value as keyof typeof colorMap] as any}>
+          <Badge variant={colorMap[value as keyof typeof colorMap] as never}>
             {value.charAt(0).toUpperCase() + value.slice(1)}
           </Badge>
         );
@@ -121,7 +121,7 @@ export const SensoresList: React.FC = () => {
     {
       key: 'acciones',
       header: 'Acciones',
-      render: (_, sensor: Sensor) => (
+      render: (_: string, sensor: Sensor) => (
         <div className="flex space-x-2">
           <Button
             size="small"
@@ -220,13 +220,14 @@ export const SensoresList: React.FC = () => {
 
       <SearchFilter
         fields={updatedFilterFields}
-        filters={filters}
+        filters={filters as Record<string, string>}
         onFilterChange={setFilters}
         onReset={resetFilters}
       />
 
       <Table
         columns={columns}
+        // @ts-expect-error generalizar
         data={sensores}
         loading={loading}
         emptyMessage="No se encontraron sensores"

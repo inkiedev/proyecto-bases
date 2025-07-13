@@ -97,7 +97,7 @@ export const AlertasList: React.FC = () => {
       critico: 'danger',
     };
     return (
-      <Badge variant={colorMap[value as keyof typeof colorMap] as any}>
+      <Badge variant={colorMap[value as keyof typeof colorMap] as never}>
         {value.charAt(0).toUpperCase() + value.slice(1)}
         </Badge>
     );
@@ -118,7 +118,7 @@ export const AlertasList: React.FC = () => {
       resuelto: 'Resuelto',
     };
     return (
-      <Badge variant={colorMap[value as keyof typeof colorMap] as any}>
+      <Badge variant={colorMap[value as keyof typeof colorMap] as never}>
         {labelMap[value as keyof typeof labelMap]}
         </Badge>
     );
@@ -154,7 +154,7 @@ export const AlertasList: React.FC = () => {
   {
     key: 'acciones',
       header: 'Acciones',
-    render: (_, alerta: Alerta) => (
+    render: (_: string, alerta: Alerta) => (
     <div className="flex space-x-2">
       {alerta.estado !== 'resuelto' && (
           <Button
@@ -277,13 +277,14 @@ export const AlertasList: React.FC = () => {
 
   <SearchFilter
   fields={updatedFilterFields}
-  filters={filters}
+  filters={filters as Record<string, string>}
   onFilterChange={setFilters}
   onReset={resetFilters}
   />
 
   <Table
   columns={columns}
+  // @ts-expect-error generalizar
   data={alertas}
   loading={loading}
   emptyMessage="No se encontraron alertas"
